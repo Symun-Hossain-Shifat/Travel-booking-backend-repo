@@ -7,8 +7,25 @@ dotsenv.config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
-app.use(cors())
-app.use(express.json())
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://assignment-nine-client-repo.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+app.use(express.json());
+
 
 
 const client = new MongoClient(uri, {
@@ -18,6 +35,30 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+const jwks = jose.createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+);
+
+const Valudateapi = async (req, res, next) => {
+  const authheader = req.headers.authorization;
+
+  if (!authheader) {
+    return res.status(401).json({ message: 'unauthorized' });
+  }
+
+  const token = authheader.split(' ')[1];
+
+  try {
+    const { payload } = await jose.jwtVerify(token, jwks);
+    req.user = payload;
+    next();
+  } catch (error) {
+    console.log("JWT ERROR:", error);
+    return res.status(403).json({ message: error.message });
+  }
+};
+
 
 
 
@@ -29,7 +70,7 @@ async function run() {
     const DestinationData = db.collection('Destinationinfo')
     const BookingData = db.collection('Bookinginfo')
 
-    app.delete('/destination/:id' , async (req , res ) => {
+    app.delete('/destination/:id' , Valudateapi , async (req , res ) => {
       const {id} = req.params
 
       const result = await DestinationData.deleteOne({_id  : new ObjectId(id)})
@@ -37,14 +78,14 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/booking/:id' , async(req , res ) => {
+    app.delete('/booking/:id' , Valudateapi , async(req , res ) => {
       const {id} = req.params
       const result = await BookingData.deleteOne({_id : new ObjectId(id)})
       console.log(result)
       res.send(result)
     })
 
-    app.patch('/destination/:id' , async (req , res ) => {
+    app.patch('/destination/:id' , Valudateapi , async (req , res ) => {
       const {id} = req.params
       const NewData = req.body
       console.log(NewData)
@@ -64,7 +105,7 @@ async function run() {
       res.send(result)
     })
 
-    app.post('/booking' , async (req , res ) => {
+    app.post('/booking' , Valudateapi,  async (req , res ) => {
      try {
     const data = req.body;
 
@@ -79,7 +120,7 @@ async function run() {
   }
     })
     
-    app.get( '/booking/:Id' , async (req , res) => {
+    app.get( '/booking/:Id' ,Valudateapi, async (req , res) => {
       const {Id} = req.params
       const result = await BookingData.find({Id : Id }).toArray()
       res.send(result)
@@ -90,7 +131,7 @@ async function run() {
     const result = await DestinationData.find().toArray()
     res.send(result)
  }) 
- app.get('/destination/:id' , async(req , res ) => {
+ app.get('/destination/:id' , Valudateapi , async(req , res ) => {
     const {id} = req.params
 
     const result = await DestinationData.findOne({_id : new ObjectId(id)})
