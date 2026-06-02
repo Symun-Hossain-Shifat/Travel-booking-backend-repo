@@ -2,6 +2,7 @@ const express = require('express');
 const app = express()
 const PORT = 5000
 const cors = require('cors')
+const jose = require("jose");
 const dotsenv = require('dotenv')
 dotsenv.config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
