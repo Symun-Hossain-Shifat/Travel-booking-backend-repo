@@ -8,14 +8,7 @@ dotsenv.config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://assignment-nine-client-repo.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 
 
 app.use((req, res, next) => {
